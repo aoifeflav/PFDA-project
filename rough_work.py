@@ -11,8 +11,11 @@ import seaborn as sns
 
 
 
-df = pd.read_csv('sherkin_island_weather.csv', skiprows=17)
-df.head()
+df = pd.read_csv(
+    'sherkin_island_weather.csv', skiprows=17, dtype=str, low_memory=False)
+
+print(df.columns)
+#https://stackoverflow.com/questions/24251219/pandas-read-csv-low-memory-and-dtype-options
 
 
 
@@ -24,7 +27,40 @@ df.columns = [
     "Indicator 4", "Mean Wind Speed (knot)", "Indicator 5", 
     "Predominant Wind Direction (degree)"
 ]
-df.head()
+df = df.iloc[:, :15]  # Keep only the first 15 columns
+new_column_names = df.columns
+
+
+
+
+numeric_columns = [
+    "Precipitation Amount (mm)",
+    "Air Temperature (C)",
+    "Wet Bulb Temperature (C)",
+    "Dew Point Temperature (C)",
+    "Vapour Pressure (hPa)",
+    "Relative Humidity (%)",
+    "Mean Sea Level Pressure (hPa)",
+    "Mean Wind Speed (knot)",
+    "Predominant Wind Direction (degree)"
+]
+
+# Convert the specified numeric columns to float, coercing invalid values to NaN
+for col in numeric_columns:
+    if col in df.columns:  # Check if the column exists after renaming
+        df[col] = pd.to_numeric(df[col], errors="coerce")  # Invalid -> NaN
+
+
+
+# Parse "Date and Time (UTC)" with the specified format
+df["Date and Time (UTC)"] = pd.to_datetime(
+    df["Date and Time (UTC)"], 
+    format="%d-%b-%Y %H:%M",  # This matches the '30-apr-2004 06:00' format
+    errors="coerce"  # Invalid -> NaT
+)
+
+# Remove rows with invalid dates
+df.dropna(subset=["Date and Time (UTC)"], inplace=True)
 
 
 
@@ -49,9 +85,14 @@ print(df.info())
 
 
 
+#convert inalid entries to nan
 df["Air Temperature (C)"] = pd.to_numeric(df["Air Temperature (C)"], errors="coerce")
 df["Relative Humidity (%)"] = pd.to_numeric(df["Relative Humidity (%)"], errors="coerce")
 df["Mean Wind Speed (knot)"] = pd.to_numeric(df["Mean Wind Speed (knot)"], errors="coerce")
+
+df.dropna(subset=["Air Temperature (C)"], inplace=True)
+df.dropna(subset=["Relative Humidity (%)"], inplace=True)
+df.dropna(subset=["Mean Wind Speed (knot)"], inplace=True)
 
 
 
@@ -134,6 +175,24 @@ plt.plot(filtered_data["Date and Time (UTC)"], filtered_data["Mean Wind Speed (k
 plt.xlabel("Date and Time (UTC)")
 plt.ylabel("Wind Speed (knot)")
 plt.title(f"Fluctuation of Wind Speed from {start_date} to {end_date}")
+plt.xticks(rotation=45)
+plt.grid()
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# date for grouping
+df["Date"] = df["Date and Time (UTC)"].dt.date
+
+#group by date and calculate daily mean
+daily_data = df.groupby("Date").mean()
+
+# Plot 
+plt.figure(figsize=(12, 6))
+plt.plot(daily_data.index, daily_data["Mean Wind Speed (knot)"], marker='o', color='orange', label="Mean Wind Speed (knot)")
+plt.xlabel("Date")
+plt.ylabel("Mean Wind Speed (knot)")
+plt.title("Daily Trend of Wind Speed")
 plt.xticks(rotation=45)
 plt.grid()
 plt.legend()
