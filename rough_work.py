@@ -45,54 +45,28 @@ numeric_columns = [
     "Predominant Wind Direction (degree)"
 ]
 
-# Convert the specified numeric columns to float, coercing invalid values to NaN
+# convert to float, coercing invalid values to NaN
 for col in numeric_columns:
-    if col in df.columns:  # Check if the column exists after renaming
-        df[col] = pd.to_numeric(df[col], errors="coerce")  # Invalid -> NaN
+    if col in df.columns:  
+        df[col] = pd.to_numeric(df[col], errors="coerce")  # convert invalid columns to Nan
 
 
 
-# Parse "Date and Time (UTC)" with the specified format
+# date time formatting
 df["Date and Time (UTC)"] = pd.to_datetime(
     df["Date and Time (UTC)"], 
-    format="%d-%b-%Y %H:%M",  # This matches the '30-apr-2004 06:00' format
-    errors="coerce"  # Invalid -> NaT
+    format="%d-%b-%Y %H:%M",  
+    errors="coerce"  
 )
 
-# Remove rows with invalid dates
+# get rid of rows with invalid dates
 df.dropna(subset=["Date and Time (UTC)"], inplace=True)
 
 
 
 
-# Drop columns with all null values
-df.dropna(axis=1, how='all', inplace=True)
+df.dropna(how="all", inplace=True)
 
-# Drop rows with any null values
-df.dropna(axis=0, inplace=True)
-
-# Convert the "Date and Time (UTC)" column to datetime format
-df["Date and Time (UTC)"] = pd.to_datetime(df["Date and Time (UTC)"])
-
-# Display cleaned data
-print(df.head())
-
-
-
-
-#Find out what data types each variable is
-print(df.info())
-
-
-
-#convert inalid entries to nan
-df["Air Temperature (C)"] = pd.to_numeric(df["Air Temperature (C)"], errors="coerce")
-df["Relative Humidity (%)"] = pd.to_numeric(df["Relative Humidity (%)"], errors="coerce")
-df["Mean Wind Speed (knot)"] = pd.to_numeric(df["Mean Wind Speed (knot)"], errors="coerce")
-
-df.dropna(subset=["Air Temperature (C)"], inplace=True)
-df.dropna(subset=["Relative Humidity (%)"], inplace=True)
-df.dropna(subset=["Mean Wind Speed (knot)"], inplace=True)
 
 
 
@@ -183,18 +157,3 @@ plt.show()
 
 # date for grouping
 df["Date"] = df["Date and Time (UTC)"].dt.date
-
-#group by date and calculate daily mean
-daily_data = df.groupby("Date").mean()
-
-# Plot 
-plt.figure(figsize=(12, 6))
-plt.plot(daily_data.index, daily_data["Mean Wind Speed (knot)"], marker='o', color='orange', label="Mean Wind Speed (knot)")
-plt.xlabel("Date")
-plt.ylabel("Mean Wind Speed (knot)")
-plt.title("Daily Trend of Wind Speed")
-plt.xticks(rotation=45)
-plt.grid()
-plt.legend()
-plt.tight_layout()
-plt.show()
