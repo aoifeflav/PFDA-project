@@ -155,5 +155,35 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
+
+
+
 # date for grouping
 df["Date"] = df["Date and Time (UTC)"].dt.date
+
+
+# Define date range
+start_date = pd.to_datetime("2023-11-30").date()
+end_date = pd.to_datetime("2024-11-30").date()
+
+# filter using date column
+filtered_df = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
+
+# Get daily max wind speed
+daily_max_wind = filtered_df.groupby("Date")["Mean Wind Speed (knot)"].max().reset_index()
+daily_max_wind.rename(columns={"Mean Wind Speed (knot)": "Daily Max Wind Speed (knot)"}, inplace=True)
+
+#Calculate 30 day rolling average 
+daily_max_wind["Rolling Avg Max Wind Speed (knot)"] = daily_max_wind["Daily Max Wind Speed (knot)"].rolling(window=30).mean()
+
+# Plot 
+plt.figure(figsize=(12, 6))
+plt.plot(daily_max_wind["Date"], daily_max_wind["Rolling Avg Max Wind Speed (knot)"], color='blue', label="30-Day Rolling Avg Max Wind Speed")
+plt.xlabel("Date")
+plt.ylabel("Wind Speed (knot)")
+plt.title(f"30 Day Rolling Average of Daily Max Wind Speed ({start_date} to {end_date})")
+plt.xticks(rotation=45)
+plt.grid()
+plt.legend()
+plt.tight_layout()
+plt.show()
