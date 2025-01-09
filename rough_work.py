@@ -67,15 +67,15 @@ df.dropna(subset=["Date and Time (UTC)"], inplace=True)
 
 df.dropna(how="all", inplace=True)
 
-
+#Create a column for date and month
+df["Month"] = df["Date and Time (UTC)"].dt.month
+df["Date"] = df["Date and Time (UTC)"].dt.date
 
 
 # Filter data for winter (Nov-Jan) and summer (May-Jul)
 winter_months = [11, 12, 1]
 summer_months = [5, 6, 7]
 
-# Just the month
-df["Month"] = df["Date and Time (UTC)"].dt.month
 
 # filter winter and summer data
 winter_data = df[df["Month"].isin(winter_months)]
@@ -186,4 +186,68 @@ plt.xticks(rotation=45)
 plt.grid()
 plt.legend()
 plt.tight_layout()
+plt.show()
+
+
+
+# Convert degrees to radians for polar plot
+df["Wind Direction Radians"] = np.deg2rad(df["Predominant Wind Direction (degree)"])
+
+# Create polar plot
+plt.figure(figsize=(8, 8))
+ax = plt.subplot(111, polar=True)
+ax.scatter(df["Wind Direction Radians"], df["Mean Wind Speed (knot)"], alpha=0.5)
+ax.set_theta_zero_location("N")  #North at the top
+ax.set_theta_direction(-1)       # clockwise
+ax.set_title("Polar Plot: Wind Speed vs Wind Direction")
+plt.show()
+
+
+
+
+# thresholds
+wind_speed_threshold = 45  # wind speed > 45 knots
+precipitation_threshold = 10  # rain > 10 mm
+
+# storms
+storm_events = df[
+    (df["Mean Wind Speed (knot)"] > wind_speed_threshold) |
+    (df["Precipitation Amount (mm)"] > precipitation_threshold)
+]
+
+print(f"Number of potential storm events: {len(storm_events)}")
+
+
+# count the storms
+storm_days = storm_events.groupby("Date").size().reset_index(name="Storm Event Count")
+
+# print
+print(storm_days)
+
+
+#Looking at how strong the storms are
+storm_severity = storm_events.groupby("Date").agg({
+    "Mean Wind Speed (knot)": "max",  # Max wind speed
+    "Precipitation Amount (mm)": "sum"  # Total precipitation
+}).reset_index()
+
+storm_severity.rename(columns={
+    "Mean Wind Speed (knot)": "Max Wind Speed (knot)",
+    "Precipitation Amount (mm)": "Total Precipitation (mm)"
+}, inplace=True)
+
+print(storm_severity)
+
+
+#plot it
+storm_severity.plot(
+    x="Date", 
+    y=["Max Wind Speed (knot)", "Total Precipitation (mm)"], 
+    kind="bar",
+    figsize=(12, 6),
+    title="Storm Severity Metrics"
+)
+plt.xticks(rotation=45)
+plt.ylabel("Value")
+plt.grid()
 plt.show()
